@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IntelliChat</title>
+    <style>
+        /* Global styles */
+        body {
+          font-family: Arial, sans-serif;
+          margin: 0;
+          padding: 0;
+          background-color: #f7f9fc;
+        }
+    
+        /* Chat container styles */
+        .chat-container {
+          max-width: 500px;
+          margin: 80px auto;
+          border-radius: 5px;
+          box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+          background-color: #fff;
+          overflow: hidden;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+        }
+    
+        /* Chat box styles */
+        .chat-box {
+          height: 350px;
+          overflow-y: scroll;
+          padding: 15px;
+        }
+    
+        .message {
+          margin-bottom: 10px;
+          overflow-wrap: break-word;
+          word-wrap: break-word;
+          padding: 15px;
+          border-radius: 5px;
+          font-size: 16px;
+        }
+    
+        /* User message styles */
+        .user-message {
+          text-align: right;
+          color: #2c3e50;
+          background-color: #ececec;
+        }
+    
+        /* Bot message styles */
+        .bot-message {
+          text-align: left;
+          color: #fff;
+          background-color: #4a90e2;
+        }
+    
+        /* Input box styles */
+        .input-box {
+          padding: 15px;
+          display: flex;
+          align-items: center;
+        }
+    
+        input[type="text"] {
+          width: calc(100% - 100px);
+          padding: 10px;
+          border: 1px solid #ccc;
+          border-radius: 3px;
+          outline: none;
+          font-size: 16px;
+        }
+    
+        input[type="submit"] {
+          padding: 10px 20px;
+          border: none;
+          background-color: #4a90e2;
+          color: #fff;
+          cursor: pointer;
+          border-radius: 3px;
+        }
+    
+        /* Typing indicator styles */
+        .typing-indicator {
+          margin-top: 5px;
+          font-style: italic;
+          color: #999;
+          font-size: 13px;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="chat-container">
+        <div class="chat-box" id="chat-box"></div>
+        <div class="input-box">
+          <input type="text" id="user-input" placeholder="Type your message...">
+          <input type="submit" value="Send" onclick="sendMessage()">
+        </div>
+        <div class="typing-indicator" id="typing-indicator"></div>
+      </div>
+
+      <script>
+        document.getElementById("user-input").addEventListener("keydown", function(event) {
+            if (event.key === "Enter") {
+                sendMessage();
+            }
+        });
+    
+        function sendMessage() {
+            var userMessage = document.getElementById("user-input").value;
+            if (userMessage.trim() === "") return;
+            addUserMessage(userMessage);
+            document.getElementById("user-input").value = "";
+            showTypingIndicator();
+            fetch('http://localhost:5000/chat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ message: userMessage })
+            })
+            .then(response => response.json())
+            .then(data => {
+                removeTypingIndicator();
+                addBotMessage(data.response, "IntelliChat");
+            })
+            .catch(error => {
+                removeTypingIndicator();
+                console.error('Error:', error);
+            });
+        }
+    
+        function addUserMessage(message, sender) {
+            var chatBox = document.getElementById("chat-box");
+            var messageElement = document.createElement("div");
+            messageElement.textContent = message;
+            messageElement.classList.add("message", "user-message");
+            chatBox.appendChild(messageElement);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+    
+        function addBotMessage(message, sender) {
+            var chatBox = document.getElementById("chat-box");
+            var messageElement = document.createElement("div");
+            messageElement.textContent = sender + ": " + message;
+            messageElement.classList.add("message", "bot-message");
+            chatBox.appendChild(messageElement);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+    
+        function showTypingIndicator() {
+            var typingIndicator = document.getElementById("typing-indicator");
+            typingIndicator.textContent = "Typing...";
+        }
+    
+        function removeTypingIndicator() {
+            var typingIndicator = document.getElementById("typing-indicator");
+            typingIndicator.textContent = "";
+        }
+    </script>
+</body>
+</html>
