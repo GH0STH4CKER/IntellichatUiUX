@@ -99,38 +99,37 @@
         </div>
         <div class="typing-indicator" id="typing-indicator"></div>
       </div>
-      <a href='https://github.com/GH0STH4CKER/IntellichatUiUX'>Go Back to Repo</a>
 
       <script>
         document.getElementById("user-input").addEventListener("keydown", function(event) {
-            if (event.key === "Enter") {
-                sendMessage();
-            }
-        });
-    
-        function sendMessage() {
-            var userMessage = document.getElementById("user-input").value;
-            if (userMessage.trim() === "") return;
-            addUserMessage(userMessage);
-            document.getElementById("user-input").value = "";
-            showTypingIndicator();
-            fetch('http://localhost:5000/chat', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ message: userMessage })
-            })
-            .then(response => response.json())
-            .then(data => {
-                removeTypingIndicator();
-                addBotMessage(data.response, "IntelliChat");
-            })
-            .catch(error => {
-                removeTypingIndicator();
-                console.error('Error:', error);
-            });
-        }
+          if (event.key === "Enter") {
+              sendMessage();
+          }
+      });
+  
+      function sendMessage() {
+          var userMessage = document.getElementById("user-input").value;
+          if (userMessage.trim() === "") return;
+          addUserMessage(userMessage);
+          document.getElementById("user-input").value = "";
+          showTypingIndicator();
+          fetch('http://127.0.0.1:5000/chat', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: 'user_input=' + encodeURIComponent(userMessage),
+        })
+          .then(response => response.json())
+          .then(data => {
+              removeTypingIndicator();
+              addBotMessage(data.response, "IntelliChat");
+          })
+          .catch(error => {
+              removeTypingIndicator();
+              console.error('Error:', error);
+          });
+      }
     
         function addUserMessage(message, sender) {
             var chatBox = document.getElementById("chat-box");
@@ -160,5 +159,8 @@
             typingIndicator.textContent = "";
         }
     </script>
+    
+
+
 </body>
 </html>
