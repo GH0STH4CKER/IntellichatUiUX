@@ -140,14 +140,26 @@
             chatBox.scrollTop = chatBox.scrollHeight;
         }
     
-        function addBotMessage(message, sender) {
+       function addBotMessage(message, sender) {
             var chatBox = document.getElementById("chat-box");
             var messageElement = document.createElement("div");
-            messageElement.textContent = sender + ": " + message;
             messageElement.classList.add("message", "bot-message");
             chatBox.appendChild(messageElement);
             chatBox.scrollTop = chatBox.scrollHeight;
+
+            // Simulate typing effect
+            var index = 0;
+            var typingInterval = setInterval(function() {
+                messageElement.textContent += message[index];
+                chatBox.scrollTop = chatBox.scrollHeight;
+                index++;
+                if (index >= message.length) {
+                    clearInterval(typingInterval);
+                    removeTypingIndicator();
+                }
+            }, 50); // Adjust the typing speed here (milliseconds per character)
         }
+
     
         function showTypingIndicator() {
             var typingIndicator = document.getElementById("typing-indicator");
