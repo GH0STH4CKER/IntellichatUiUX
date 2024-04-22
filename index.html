@@ -113,7 +113,7 @@
           addUserMessage(userMessage);
           document.getElementById("user-input").value = "";
           showTypingIndicator();
-          fetch('https://intelli-chat-ai.vercel.app/chat', {
+          fetch('http://127.0.0.1:5000/chat', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
