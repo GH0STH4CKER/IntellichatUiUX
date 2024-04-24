@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet">
     <title>IntelliChat</title>
     <style>
         /* Global styles */
@@ -88,9 +89,16 @@
           color: #999;
           font-size: 13px;
         }
+        .headline {
+          font-family: 'Playfair Display', serif; /* Replace 'Playfair Display' with the desired elegant font */
+          text-align: center;
+        }
+
       </style>
     </head>
     <body>
+      <div>
+      <div><<h1 class='headline'>IntelliChat</h1></div>
       <div class="chat-container">
         <div class="chat-box" id="chat-box"></div>
         <div class="input-box">
@@ -98,6 +106,7 @@
           <input type="submit" value="Send" onclick="sendMessage()">
         </div>
         <div class="typing-indicator" id="typing-indicator"></div>
+      </div>
       </div>
 
       <script>
@@ -113,7 +122,7 @@
           addUserMessage(userMessage);
           document.getElementById("user-input").value = "";
           showTypingIndicator();
-          fetch('http://127.0.0.1:5000/chat', {
+          fetch('https://intelli-chat-ai.vercel.app/chat', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
@@ -172,7 +181,5 @@
         }
     </script>
     
-
-
 </body>
 </html>
