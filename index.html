@@ -1,4 +1,159 @@
-<!DOCTYPE html>
+from flask import Flask, request, jsonify
+import json
+import random
+import wikipedia
+import re
+import time
+import warnings
+import nltk
+from nltk.stem import WordNetLemmatizer
+
+app = Flask(__name__)
+
+# Set NLTK data path
+nltk.data.path.append("/var/task/api/nltk_data/")
+
+# Load intents data
+intents = json.loads(open('/var/task/api/intents.json').read())
+
+# Suppressing GuessedAtParserWarning
+warnings.filterwarnings("ignore", category=UserWarning, module='wikipedia')
+
+# Initialize WordNetLemmatizer
+lemmatizer = WordNetLemmatizer()
+
+# Function to clean up a sentence by tokenizing and lemmatizing its words
+def clean_up_sentence(sentence):
+    sentence_words = nltk.word_tokenize(sentence)
+    sentence_words = [lemmatizer.lemmatize(word.lower()) for word in sentence_words]
+    return sentence_words
+
+# Function to predict the intent class of a given sentence
+def predict_class(sentence):
+    for intent in intents['intents']:
+        for pattern in intent['patterns']:
+            if pattern.lower() in sentence.lower():
+                return intent['tag']
+
+# Function to get a response based on predicted intent
+def get_response(intent_tag):
+    for intent in intents['intents']:
+        if intent['tag'] == intent_tag:
+            return random.choice(intent['responses'])
+
+def extract_subject(question):
+    # Split the question into words
+    punctuation_marks = ['.', ',', '!', '?', ':', ';', "'", '"', '(', ')', '[', ']', '-', '—', '...', '/', '\\', '&', '*', '%', '$', '#', '@', '+', '-', '=', '<', '>', '_', '|', '~', '^']
+    # Removing punctuation marks
+    for punctuation_mark in punctuation_marks:
+        if punctuation_mark in question:
+            question = question.replace(punctuation_mark, '')
+    
+    subject = ''
+    words = question.split(' ')
+    list_size = len(words)
+
+    for i in range(list_size):
+        if i > 1 and i != list_size:
+            subject += words[i]+' '
+        elif i == list_size:
+            subject += words[i]
+    return subject
+
+# Function to clean text by removing characters within parentheses
+def clean_text(text):
+    cleaned_text = re.sub(r'\([^()]*\)', '', text)
+    cleaned_text = cleaned_text.strip()
+    return cleaned_text
+
+# Function to search Wikipedia for information based on a question
+def search_wikipedia(question, num_sentences=2):
+    try:
+        subject = extract_subject(question)
+        wiki_result = wikipedia.summary(subject, auto_suggest=False, sentences=num_sentences)
+        return clean_text(wiki_result)
+    except wikipedia.exceptions.PageError:
+        return f"Sorry, I couldn't find information about {subject}."
+    except wikipedia.exceptions.DisambiguationError as e:
+        return f"Multiple matches found. Try being more specific: {', '.join(e.options)}"
+    except Exception as e:
+        return "Error, Something went wrong!"
+
+
+# Function to print text with a typewriter effect
+def typewriter_print(text, delay=0.05, end='\n'):
+    for char in text:
+        print(char, end='', flush=True)
+        time.sleep(delay)
+    print(end, end='')
+
+# Function to get a response from the chatbot
+def chatbot_response(text):
+    intent_tag = predict_class(text)
+    if intent_tag:
+        response = get_response(intent_tag)
+        return response
+    else:
+        return "I'm sorry, I didn't understand that."
+
+@app.route('/chat', methods=['POST'])
+def chat():
+    user_text = request.form.get('user_input')
+    if not user_text:
+        return jsonify({'error': 'No user input provided'}), 400
+    
+    chat_responses = [
+        "How old are you?", "What's your age?", "How are you?", "What's the weather like?",
+        "How's the weather today?", "Who are you?", "What are you?", "What's your purpose?",
+        "Who created you?", "What technology are you built with?", "How do you work?",
+        "What's your underlying technology?", "What programming language are you written in?"
+    ]
+
+    if any(str(a) + symbol + str(b) in user_text for a in [1,2,3,4,5,6,7,8,9,0] for b in [1,2,3,4,5,6,7,8,9,0] for symbol in ['*','/','-','+','**']):
+        # If it's a math question
+        index = []
+        for i in range(len(user_text)):
+            if user_text[i].isnumeric():
+                index.append(i)
+        try:
+            ans = str(eval(user_text[index[0]:index[-1]+1]))
+            return jsonify({'response': f'Answer is {ans}'})
+        except Exception as e:
+            return jsonify({'error': f'Error: {e}'}), 400
+
+    elif 'tell me a joke' in user_text.lower() or 'another joke' in user_text.lower() or 'tell a joke' in user_text.lower():
+        # If its asking for a joke
+        res = requests.get('https://official-joke-api.appspot.com/random_joke')
+        if res.ok:
+            joke = json.loads(res.text)
+            response = joke['setup']+' '+joke['punchline']
+            return jsonify({'response': response})
+        else:
+            jokes = [
+            "Why don't scientists trust atoms? Because they make up everything!",
+            "What do you call fake spaghetti? An impasta!",
+            "Why did the scarecrow win an award? Because he was outstanding in his field!",
+            "Why couldn't the bicycle stand up by itself? It was two-tired!",
+            "What's orange and sounds like a parrot? A carrot!"
+            ]
+
+            random_joke = random.choice(jokes)
+            return jsonify({'response': random_joke})
+        
+    
+    elif user_text.lower().startswith(('who', 'what', 'where', 'which', 'when', 'how')) and user_text.lower() not in [item.lower() for item in chat_responses]:
+        # If it's a Wikipedia question
+        response = search_wikipedia(user_text)
+        return jsonify({'response': response})
+
+    else:
+        # Otherwise, it's a regular chat response
+        bot_response = chatbot_response(user_text)
+        return jsonify({'response': bot_response})
+
+@app.route('/chat_ui', methods=['GET'])
+def chat_ui():
+    html_content = """<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -182,4 +337,8 @@
     </script>
     
 </body>
-</html>
+</html>"""
+    return html_content
+
+if __name__ == '__main__':
+    app.run(debug=True)
